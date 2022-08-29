@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datadog-cluster-agent
+  namespace: default
+spec:
+  selector:
+      matchLabels:
+        app: datadog-cluster-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-cluster-agent
+      name: datadog-agent
+    spec:
+      serviceAccountName: datadog-cluster-agent
+      containers:
+      - image: public.ecr.aws/datadog/cluster-agent:latest
+        imagePullPolicy: Always
+        name: datadog-cluster-agent
+        env:
+          - name: DD_CLUSTER_NAME
+            value: "eksdotnet-eksctl"
+          - name: DD_ORCHESTRATOR_EXPLORER_ENABLED
+            value: "true"
+          - name: DD_API_KEY
+            value: 48c0ebf96886e474b7288f870d081522
+          - name: DD_APP_KEY		# Optional
+            value: 2bbb0b7dda0cf3cabcd8f061c49e168e325f2b43	# Optional
+          - name: DD_COLLECT_KUBERNETES_EVENTS
+            value: "true"
+          - name: DD_LEADER_ELECTION
+            value: "true"
+          - name: DD_EXTERNAL_METRICS_PROVIDER_ENABLED
+            value: "true"
+          - name: DD_CLUSTER_AGENT_AUTH_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: datadog-auth-token
+                key: token
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datadog-cluster-agent
+  labels:
+    app: datadog-cluster-agent
+spec:
+  ports:
+  - port: 5005 # Has to be the same as the one exposed in the DCA. Default is 5005.
+    protocol: TCP
+  selector:
+    app: datadog-cluster-agent
